@@ -6,3 +6,5 @@ __pycache__/
 .ruff_cache/
 data/*.db
 .DS_Store
+.docs
+data/docs/
