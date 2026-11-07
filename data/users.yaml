@@ -1,0 +1,13 @@
+users:
+- username: viewer
+  name: Vimal Perera
+  role: viewer
+  password_hash: $2b$12$oZ2QLBhTanevL4fSDc2QOu3QS41krzR4E5UNm2oDqeyI7ozDKh2CO
+- username: analyst
+  name: Anusha Silva
+  role: analyst
+  password_hash: $2b$12$CfeTKZ.LZa6NoiT1b5klGeah2JYRoYa5oF8LO2phHXaAB4/hNIdqu
+- username: admin
+  name: Ashan Fernando
+  role: admin
+  password_hash: $2b$12$yuwi2dHHnm1DvectcJxAyu9IYixNEeAkgLmLBCy/oYAG643bo8KQy

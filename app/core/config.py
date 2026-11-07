@@ -10,6 +10,11 @@ class Settings(BaseSettings):
     brand_name: str = "Commercial Bank"
     log_level: str = "INFO"
 
+    jwt_secret: str
+    jwt_algorithm: str = "HS256"
+    jwt_ttl_s: int = 7200
+    users_file: str = "data/users.yaml"
+
 
 @lru_cache
 def get_settings() -> Settings:
