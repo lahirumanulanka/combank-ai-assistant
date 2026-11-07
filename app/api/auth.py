@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app.api.deps import CurrentUser
+from app.api.deps import RateLimitedUser
 from app.api.schemas import LoginRequest, MeResponse, TokenResponse
 from app.core.rbac import allowed_access_levels
 from app.core.security import create_access_token
@@ -20,7 +20,7 @@ async def login(body: LoginRequest) -> TokenResponse:
 
 
 @router.get("/me", response_model=MeResponse)
-async def me(user: CurrentUser) -> MeResponse:
+async def me(user: RateLimitedUser) -> MeResponse:
     return MeResponse(
         username=user.username,
         name=user.name,
