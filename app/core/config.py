@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     llm_cheap: str = "anthropic:claude-haiku-5-5"
     llm_timeout_s: float = 40
 
+    checkpoint_db: str = "data/checkpoints.db"
+
 
 def require_secret(value: SecretStr | None, env_name: str) -> str:
     if value is None or not value.get_secret_value():
