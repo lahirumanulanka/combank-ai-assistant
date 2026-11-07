@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import SecretStr
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     pinecone_index: str = "combank-kb"
     pinecone_cloud: str = "aws"
     pinecone_region: str = "us-east-1"
+
+    hybrid_alpha: float = Field(0.7, ge=0, le=1)
+    retrieval_top_k: int = 8
 
 
 def require_secret(value: SecretStr | None, env_name: str) -> str:
