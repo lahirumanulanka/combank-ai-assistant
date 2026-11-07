@@ -27,3 +27,11 @@ class RateLimited(AppError):
             extra={"retry_after": retry_after},
             headers={"Retry-After": str(retry_after)},
         )
+
+
+class AssistantUnavailable(AppError):
+    status_code = 503
+    code = "assistant_unavailable"
+
+    def __init__(self):
+        super().__init__("The assistant is not configured yet. Check the API keys in .env.")

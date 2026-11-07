@@ -18,3 +18,8 @@ class MeResponse(BaseModel):
     name: str
     role: str
     access_levels: list[str]
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=4000)
+    thread_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,64}$")
