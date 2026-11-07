@@ -1,10 +1,14 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter
 
 from app.api.deps import RateLimitedUser
 from app.api.schemas import LoginRequest, MeResponse, TokenResponse
+from app.core.errors import Unauthorized
+from app.core.logging import get_logger
 from app.core.rbac import allowed_access_levels
 from app.core.security import create_access_token
 from app.core.users import authenticate
+
+log = get_logger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -13,8 +17,10 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def login(body: LoginRequest) -> TokenResponse:
     user = authenticate(body.username, body.password)
     if user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Wrong username or password")
+        log.warning("login_failed", username=body.username)
+        raise Unauthorized("Wrong username or password")
 
+    log.info("login_succeeded", user=user.username, role=user.role.value)
     token = create_access_token(user.username, user.role)
     return TokenResponse(access_token=token, role=user.role, name=user.name)
 
