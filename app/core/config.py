@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     app_name: str = "Commercial Bank Knowledge Assistant"
     brand_name: str = "Commercial Bank"
     log_level: str = "INFO"
+    log_json: bool = False
 
     jwt_secret: str
     jwt_algorithm: str = "HS256"
