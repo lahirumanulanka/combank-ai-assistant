@@ -1,4 +1,3 @@
-from langchain_core.messages import AIMessage
 from langgraph.runtime import Runtime
 
 from app.core.config import get_settings
@@ -17,15 +16,19 @@ def make_response(llm):
     async def response(state: AgentState, runtime: Runtime[RuntimeContext]) -> dict:
         user = runtime.context
         details = {"brand": get_settings().brand_name, "name": user.name, "role": user.role.value}
+        attempts = state.get("attempts", 0) + 1
 
         if state["route"] == "chitchat":
             system = prompts.CHITCHAT.format(**details)
         elif not state.get("retrieved"):
-            return {"messages": [AIMessage(content=prompts.NOT_FOUND)]}
+            return {"draft": prompts.NOT_FOUND, "attempts": attempts}
         else:
             system = prompts.RESPONSE.format(**details, passages=format_passages(state["retrieved"]))
+            rejection = state.get("validation", {}).get("reason")
+            if rejection:
+                system += prompts.RETRY_FEEDBACK.format(reason=rejection)
 
         answer = await llm.ainvoke([("system", system), *state["messages"][-6:]])
-        return {"messages": [answer]}
+        return {"draft": answer.content, "attempts": attempts}
 
     return response
