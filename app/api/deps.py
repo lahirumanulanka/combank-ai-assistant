@@ -1,8 +1,10 @@
+import math
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.core.ratelimit import get_rate_limiter
 from app.core.security import InvalidTokenError, decode_access_token
 from app.core.users import User, get_user
 
@@ -35,3 +37,23 @@ async def current_user(
 
 
 CurrentUser = Annotated[User, Depends(current_user)]
+
+
+async def rate_limited_user(user: CurrentUser) -> User:
+    result = get_rate_limiter().check(user.username, user.role)
+    if result.allowed:
+        return user
+
+    retry_after = math.ceil(result.retry_after_s)
+    raise HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail={
+            "error": "rate_limited",
+            "message": f"Too many requests. Please wait {retry_after} seconds.",
+            "retry_after": retry_after,
+        },
+        headers={"Retry-After": str(retry_after)},
+    )
+
+
+RateLimitedUser = Annotated[User, Depends(rate_limited_user)]
