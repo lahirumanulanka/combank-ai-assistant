@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     jwt_ttl_s: int = 7200
     users_file: str = "data/users.yaml"
 
+    rate_limit_viewer: tuple[float, float] = (10, 0.2)
+    rate_limit_analyst: tuple[float, float] = (20, 0.5)
+    rate_limit_admin: tuple[float, float] = (30, 1.0)
+
 
 @lru_cache
 def get_settings() -> Settings:
