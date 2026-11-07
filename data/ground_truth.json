@@ -1,0 +1,114 @@
+{
+  "INC-2025-09-30": {
+    "date": "2025-09-30",
+    "service": "card-switch",
+    "severity": "SEV2",
+    "root_cause": "connection_pool_exhaustion",
+    "payment_related": true
+  },
+  "INC-2025-11-18": {
+    "date": "2025-11-18",
+    "service": "card-switch",
+    "severity": "SEV2",
+    "root_cause": "connection_pool_exhaustion",
+    "payment_related": true
+  },
+  "INC-2025-12-02": {
+    "date": "2025-12-02",
+    "service": "payment-gateway",
+    "severity": "SEV3",
+    "root_cause": "expired_tls_certificate",
+    "payment_related": true
+  },
+  "INC-2025-12-24": {
+    "date": "2025-12-24",
+    "service": "payment-gateway",
+    "severity": "SEV1",
+    "root_cause": "connection_pool_exhaustion",
+    "payment_related": true
+  },
+  "INC-2026-01-15": {
+    "date": "2026-01-15",
+    "service": "mobile-payments",
+    "severity": "SEV2",
+    "root_cause": "idempotency_cache_eviction",
+    "payment_related": true
+  },
+  "INC-2026-02-09": {
+    "date": "2026-02-09",
+    "service": "payment-gateway",
+    "severity": "SEV3",
+    "root_cause": "config_drift_deployment",
+    "payment_related": true
+  },
+  "INC-2026-02-27": {
+    "date": "2026-02-27",
+    "service": "identity",
+    "severity": "SEV1",
+    "root_cause": "key_rotation_failure",
+    "payment_related": false
+  },
+  "INC-2026-03-14": {
+    "date": "2026-03-14",
+    "service": "payment-gateway",
+    "severity": "SEV2",
+    "root_cause": "connection_pool_exhaustion",
+    "payment_related": true
+  },
+  "INC-2026-04-03": {
+    "date": "2026-04-03",
+    "service": "card-switch",
+    "severity": "SEV2",
+    "root_cause": "expired_tls_certificate",
+    "payment_related": true
+  },
+  "INC-2026-05-05": {
+    "date": "2026-05-05",
+    "service": "data-platform",
+    "severity": "SEV3",
+    "root_cause": "disk_full",
+    "payment_related": false
+  },
+  "INC-2026-05-21": {
+    "date": "2026-05-21",
+    "service": "mobile-payments",
+    "severity": "SEV3",
+    "root_cause": "idempotency_cache_eviction",
+    "payment_related": true
+  },
+  "INC-2026-06-30": {
+    "date": "2026-06-30",
+    "service": "core-banking-adapter",
+    "severity": "SEV2",
+    "root_cause": "connection_pool_exhaustion",
+    "payment_related": true
+  },
+  "INC-2026-07-21": {
+    "date": "2026-07-21",
+    "service": "payment-gateway",
+    "severity": "SEV1",
+    "root_cause": "expired_tls_certificate",
+    "payment_related": true
+  },
+  "INC-2026-08-12": {
+    "date": "2026-08-12",
+    "service": "payment-gateway",
+    "severity": "SEV3",
+    "root_cause": "config_drift_deployment",
+    "payment_related": true
+  },
+  "INC-2026-09-27": {
+    "date": "2026-09-27",
+    "service": "mobile-payments",
+    "severity": "SEV2",
+    "root_cause": "idempotency_cache_eviction",
+    "payment_related": true
+  },
+  "INC-2026-10-08": {
+    "date": "2026-10-08",
+    "service": "knowledge-assistant",
+    "severity": "SEV4",
+    "root_cause": "quota_exhausted",
+    "payment_related": false
+  }
+}
