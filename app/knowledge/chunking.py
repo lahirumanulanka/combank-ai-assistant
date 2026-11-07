@@ -1,3 +1,5 @@
+from datetime import date
+
 from pydantic import BaseModel
 
 from app.knowledge.documents import Document
@@ -54,6 +56,10 @@ def split_long_text(text: str, max_words: int = MAX_WORDS, overlap: int = OVERLA
     return pieces
 
 
+def date_as_number(day: date) -> int:
+    return int(day.strftime("%Y%m%d"))
+
+
 def chunk_document(document: Document) -> list[Chunk]:
     meta = document.meta
     chunks: list[Chunk] = []
@@ -67,7 +73,12 @@ def chunk_document(document: Document) -> list[Chunk]:
                     doc_id=meta.doc_id,
                     section=section,
                     text=f"{meta.title}\n## {section}\n{piece}",
-                    metadata={**meta.model_dump(mode="json"), "section": section, "chunk_index": index},
+                    metadata={
+                        **meta.model_dump(mode="json"),
+                        "created_on": date_as_number(meta.created_date),
+                        "section": section,
+                        "chunk_index": index,
+                    },
                 )
             )
     return chunks
