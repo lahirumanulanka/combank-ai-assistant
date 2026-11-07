@@ -2,6 +2,7 @@ from pinecone import Pinecone, ServerlessSpec
 
 from app.core.config import Settings, require_secret
 from app.core.logging import get_logger
+from app.knowledge.bm25 import SparseVector
 
 log = get_logger(__name__)
 
@@ -46,6 +47,27 @@ class VectorStore:
     def upsert(self, records: list[dict], namespace: str, batch_size: int = 100) -> None:
         for start in range(0, len(records), batch_size):
             self.index.upsert(vectors=records[start:start + batch_size], namespace=namespace)
+
+    def query(
+        self,
+        dense: list[float],
+        sparse: SparseVector,
+        top_k: int,
+        metadata_filter: dict,
+        namespace: str,
+    ) -> list[dict]:
+        request = {
+            "vector": dense,
+            "top_k": top_k,
+            "filter": metadata_filter,
+            "namespace": namespace,
+            "include_metadata": True,
+        }
+        if sparse["indices"]:
+            request["sparse_vector"] = sparse
+
+        response = self.index.query(**request)
+        return [{"id": match.id, "score": match.score, "metadata": match.metadata} for match in response.matches]
 
     def stats(self) -> dict:
         stats = self.index.describe_index_stats()

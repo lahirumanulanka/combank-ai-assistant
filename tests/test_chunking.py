@@ -67,6 +67,7 @@ def test_chunk_metadata_carries_the_access_level_for_rbac():
     assert chunk.metadata["access_level"] == "internal"
     assert chunk.metadata["department"] == "security"
     assert chunk.metadata["created_date"] == "2026-01-01"
+    assert chunk.metadata["created_on"] == 20260101
     assert chunk.metadata["section"] == "Overview"
 
 

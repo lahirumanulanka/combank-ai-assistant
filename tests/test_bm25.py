@@ -1,3 +1,5 @@
+import pytest
+
 from app.knowledge.bm25 import BM25Encoder, token_id, tokenize
 
 CORPUS = [
@@ -62,3 +64,14 @@ def test_save_and_load_give_identical_vectors(tmp_path):
 
     assert loaded.encode_document(CORPUS[2]) == encoder.encode_document(CORPUS[2])
     assert loaded.encode_query("ssl payments") == encoder.encode_query("ssl payments")
+
+
+def test_scores_stay_on_a_zero_to_one_scale_like_dense_scores():
+    encoder = BM25Encoder().fit(CORPUS)
+
+    query = encoder.encode_query("payments ssl certificates")
+    document = encoder.encode_document(CORPUS[2])
+
+    assert sum(query["values"]) == pytest.approx(1.0, abs=1e-4)
+    assert all(0 < value < 1 for value in document["values"])
+    assert 0 < dot(query, document) < 1
