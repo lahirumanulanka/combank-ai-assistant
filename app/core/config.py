@@ -39,6 +39,12 @@ class Settings(BaseSettings):
 
     hybrid_alpha: float = Field(0.7, ge=0, le=1)
     retrieval_top_k: int = 8
+    retrieval_min_score: float = 0.3
+
+    anthropic_api_key: SecretStr | None = None
+    llm_strong: str = "anthropic:claude-sonnet-5-5"
+    llm_cheap: str = "anthropic:claude-haiku-5-5"
+    llm_timeout_s: float = 40
 
 
 def require_secret(value: SecretStr | None, env_name: str) -> str:
