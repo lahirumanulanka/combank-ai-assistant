@@ -53,13 +53,14 @@ class BM25Encoder:
         weights: dict[int, float] = {}
         for token, count in counts.items():
             length_norm = 1 - self.b + self.b * length / self.avg_doc_length
-            score = count * (self.k1 + 1) / (count + self.k1 * length_norm)
+            score = count / (count + self.k1 * length_norm)
             weights[token_id(token)] = weights.get(token_id(token), 0.0) + score
         return to_sparse(weights)
 
     def encode_query(self, text: str) -> SparseVector:
-        weights = {token_id(token): self.idf(token) for token in set(tokenize(text)) if token in self.doc_freq}
-        return to_sparse(weights)
+        idf_by_id = {token_id(token): self.idf(token) for token in set(tokenize(text)) if token in self.doc_freq}
+        total = sum(idf_by_id.values())
+        return to_sparse({index: value / total for index, value in idf_by_id.items()})
 
     def idf(self, token: str) -> float:
         n = self.doc_freq.get(token, 0)
