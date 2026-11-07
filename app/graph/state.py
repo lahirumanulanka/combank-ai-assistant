@@ -12,3 +12,6 @@ class AgentState(TypedDict, total=False):
     rationale: str
     search_query: str
     retrieved: list[dict]
+    draft: str
+    attempts: int
+    validation: dict

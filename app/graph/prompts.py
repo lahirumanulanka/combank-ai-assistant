@@ -27,3 +27,13 @@ architecture documents, product specs and meeting notes, within the user's acces
 NOT_FOUND = (
     "I couldn't find information about that in the documents available to you. Try rephrasing your question."
 )
+
+RETRY_FEEDBACK = """
+
+Your previous answer was rejected by the citation checker: {reason}
+Write the answer again. Cite only ids that appear in the passages above."""
+
+UNVERIFIED = (
+    "I found related documents but could not produce an answer with verified sources. "
+    "Please try asking again in a different way."
+)

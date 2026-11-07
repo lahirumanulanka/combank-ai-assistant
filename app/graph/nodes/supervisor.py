@@ -24,7 +24,15 @@ def make_supervisor(llm):
         plan: RoutePlan = await planner.ainvoke([("system", system), *state["messages"][-6:]])
 
         log.info("supervisor_routed", route=plan.route, rationale=plan.rationale)
-        return {"route": plan.route, "search_query": plan.search_query, "rationale": plan.rationale}
+        return {
+            "route": plan.route,
+            "search_query": plan.search_query,
+            "rationale": plan.rationale,
+            "retrieved": [],
+            "draft": "",
+            "attempts": 0,
+            "validation": {},
+        }
 
     return supervisor
 
