@@ -1,6 +1,7 @@
 import asyncio
 
 from langchain_core.messages import AIMessage, HumanMessage
+from langgraph.checkpoint.memory import InMemorySaver
 
 from app.core.rbac import Role
 from app.graph import prompts
@@ -18,10 +19,13 @@ class FakePlanner:
         return self.plan
 
 
+GOOD_ANSWER = "Passwords rotate every 90 days [POL-SEC-001#4]."
+
+
 class FakeLLM:
-    def __init__(self, route: str = "qa", answer: str = "Passwords rotate every 90 days [POL-SEC-001#4]."):
+    def __init__(self, route: str = "qa", answer: str = GOOD_ANSWER, answers: list[str] | None = None):
         self.plan = RoutePlan(route=route, search_query="password rotation policy", rationale="policy question")
-        self.answer = answer
+        self.answers = answers or [answer]
         self.system_prompts: list[str] = []
 
     def with_structured_output(self, schema):
@@ -29,7 +33,8 @@ class FakeLLM:
 
     async def ainvoke(self, messages):
         self.system_prompts.append(messages[0][1])
-        return AIMessage(self.answer)
+        index = min(len(self.system_prompts) - 1, len(self.answers) - 1)
+        return AIMessage(self.answers[index])
 
 
 class FakeSearcher:
@@ -97,3 +102,46 @@ def test_chitchat_skips_search():
 
     assert searcher.calls == []
     assert result["messages"][-1].content == "Hello! How can I help?"
+
+
+def test_made_up_citation_is_retried_with_feedback_and_then_accepted():
+    llm = FakeLLM(answers=["90 days [INC-1999-01-01#9].", GOOD_ANSWER])
+
+    result = ask(llm, FakeSearcher([0.9]), "password policy?")
+
+    assert result["attempts"] == 2
+    assert "INC-1999-01-01#9" in llm.system_prompts[1]
+    assert result["messages"][-1].content == GOOD_ANSWER
+
+
+def test_gives_a_safe_message_when_retry_also_fails():
+    llm = FakeLLM(answers=["90 days, no citation.", "Still no citation."])
+
+    result = ask(llm, FakeSearcher([0.9]), "password policy?")
+
+    assert result["attempts"] == 2
+    assert result["messages"][-1].content == prompts.UNVERIFIED
+
+
+def test_rejected_draft_never_enters_the_chat_history():
+    llm = FakeLLM(answers=["Wrong [INC-1999-01-01#9].", GOOD_ANSWER])
+
+    result = ask(llm, FakeSearcher([0.9]), "password policy?")
+
+    assert [m.content for m in result["messages"]] == ["password policy?", GOOD_ANSWER]
+
+
+def test_follow_up_question_sees_the_earlier_turn():
+    graph = build_graph(FakeLLM(), FakeSearcher([0.9]), checkpointer=InMemorySaver())
+    context = RuntimeContext(user_id="viewer", role=Role.VIEWER, name="Test User")
+    config = {"configurable": {"thread_id": "t1"}}
+
+    async def two_turns():
+        await graph.ainvoke({"messages": [HumanMessage("password policy?")]}, config=config, context=context)
+        return await graph.ainvoke({"messages": [HumanMessage("who approves exceptions to it?")]},
+                                   config=config, context=context)
+
+    result = asyncio.run(two_turns())
+
+    assert len(result["messages"]) == 4
+    assert result["attempts"] == 1
