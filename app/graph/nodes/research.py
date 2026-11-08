@@ -12,6 +12,7 @@ from app.core.logging import get_logger
 from app.graph import prompts
 from app.graph.context import RuntimeContext
 from app.graph.state import AgentState, WorkerInput
+from app.guards.injection import scan
 from app.knowledge.catalog import Library
 from app.knowledge.chunking import chunk_document
 from app.knowledge.documents import Document
@@ -87,9 +88,11 @@ def fan_out_to_workers(state: AgentState) -> list[Send] | str:
 def format_evidence(documents: list[Document]) -> str:
     parts = []
     for doc in documents:
-        sections = [chunk.text for chunk in chunk_document(doc) if chunk.section in EVIDENCE_SECTIONS]
+        sections = [chunk.text for chunk in chunk_document(doc)
+                    if chunk.section in EVIDENCE_SECTIONS and not scan(chunk.text).flagged]
         meta = doc.meta
-        parts.append(f"### {meta.doc_id} ({meta.created_date}, {meta.service})\n" + "\n\n".join(sections))
+        body = "\n\n".join(sections)
+        parts.append(f"### {meta.doc_id} ({meta.created_date}, {meta.service})\n<<doc id=\"{meta.doc_id}\">>\n{body}\n<</doc>>")
     return "\n\n".join(parts)
 
 
@@ -107,7 +110,7 @@ def make_research_worker(llm, library: Library):
         role = runtime.context.role
         documents = [doc for doc in (library.get(doc_id, role) for doc_id in task["batch"]) if doc]
         system = prompts.RESEARCH_WORKER.format(brand=get_settings().brand_name,
-                                                documents=format_evidence(documents))
+                                                documents=format_evidence(documents)) + prompts.SPOTLIGHT_RULE
         try:
             result: BatchFindings = await extractor.ainvoke([("system", system), ("user", task["question"])])
         except Exception as exc:  # noqa: BLE001 - one failed worker must not stop the others

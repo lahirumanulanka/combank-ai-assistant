@@ -38,6 +38,7 @@ def make_supervisor(llm):
             "search_query": plan.search_query,
             "rationale": plan.rationale,
             "retrieved": [],
+            "dropped": [],
             "draft": "",
             "attempts": 0,
             "validation": {},

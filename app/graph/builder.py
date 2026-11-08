@@ -4,6 +4,7 @@ from langgraph.graph import END, START, StateGraph
 
 from app.core.config import get_settings
 from app.graph.context import RuntimeContext
+from app.graph.nodes.input_guard import blocked_response, input_guard, route_after_guard
 from app.graph.nodes.research import (
     fan_out_to_workers,
     make_research_execute,
@@ -36,6 +37,8 @@ def build_graph(llm, searcher, checkpointer=None, library: Library | None = None
     registry = registry or ToolRegistry([make_knowledge_search(searcher)])
     graph = StateGraph(AgentState, context_schema=RuntimeContext)
 
+    graph.add_node("input_guard", input_guard)
+    graph.add_node("blocked_response", blocked_response)
     graph.add_node("supervisor", make_supervisor(llm))
     graph.add_node("retrieval", make_retrieval(searcher))
     graph.add_node("research_plan", make_research_plan(llm, library))
@@ -47,7 +50,9 @@ def build_graph(llm, searcher, checkpointer=None, library: Library | None = None
     graph.add_node("response", make_response(llm))
     graph.add_node("validator", validator)
 
-    graph.add_edge(START, "supervisor")
+    graph.add_edge(START, "input_guard")
+    graph.add_conditional_edges("input_guard", route_after_guard, ["blocked_response", "supervisor"])
+    graph.add_edge("blocked_response", END)
     graph.add_conditional_edges("supervisor", route_after_supervisor,
                                 ["retrieval", "research_plan", "tool_agent", "response"])
     graph.add_edge("retrieval", "response")

@@ -2,6 +2,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.config import get_settings
 from app.core.rbac import Role
+from app.guards.injection import guard_passages
 from app.knowledge.documents import DocumentType
 from app.tools.registry import AgentTool
 
@@ -18,10 +19,12 @@ def make_knowledge_search(searcher) -> AgentTool:
         parsed = KnowledgeSearchArgs.model_validate(args)
         results = await searcher.search(parsed.query, role, document_type=parsed.document_type)
         min_score = get_settings().retrieval_min_score
-        return [
+        passages = [
             {"chunk_id": r.chunk_id, "title": r.title, "section": r.section, "text": r.text}
             for r in results if r.score >= min_score
         ]
+        kept, _ = guard_passages(passages)
+        return kept
 
     return AgentTool(
         name="knowledge_search",
