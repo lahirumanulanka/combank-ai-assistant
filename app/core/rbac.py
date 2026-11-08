@@ -30,8 +30,21 @@ TOOL_ROLES: dict[str, set[Role]] = {
     "lookup_employee": {Role.ANALYST, Role.ADMIN},
     "get_service": {Role.ANALYST, Role.ADMIN},
     "list_incident_records": {Role.ANALYST, Role.ADMIN},
+    "admin_purge_cache": {Role.ADMIN},
+    "admin_reindex_namespace": {Role.ADMIN},
 }
+
+APPROVAL_TOOLS = {"admin_purge_cache", "admin_reindex_namespace"}
+ROLE_ORDER = [Role.VIEWER, Role.ANALYST, Role.ADMIN]
 
 
 def can_use_tool(role: Role, tool_name: str) -> bool:
     return role in TOOL_ROLES.get(tool_name, set())
+
+
+def needs_approval(tool_name: str) -> bool:
+    return tool_name in APPROVAL_TOOLS
+
+
+def lowest_role_for(tool_name: str) -> Role | None:
+    return next((role for role in ROLE_ORDER if role in TOOL_ROLES.get(tool_name, set())), None)
