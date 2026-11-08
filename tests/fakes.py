@@ -67,17 +67,18 @@ class FakeLLM:
 
 
 class FakeSearcher:
-    def __init__(self, scores: list[float]):
+    def __init__(self, scores: list[float], texts: list[str] | None = None):
         self.scores = scores
+        self.texts = texts or ["rotate every 90 days"] * len(scores)
         self.calls: list[tuple[str, Role]] = []
 
     async def search(self, query: str, role: Role, **filters):
         self.calls.append((query, role))
         return [
             SearchResult(chunk_id=f"POL-SEC-001#{i}", doc_id="POL-SEC-001", title="Information Security Policy",
-                         section="4. Authentication", text="rotate every 90 days", score=score,
+                         section="4. Authentication", text=text, score=score,
                          namespace="security", access_level="internal")
-            for i, score in enumerate(self.scores, start=4)
+            for i, (score, text) in enumerate(zip(self.scores, self.texts, strict=True), start=4)
         ]
 
 

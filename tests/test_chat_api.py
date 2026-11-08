@@ -43,7 +43,7 @@ def test_stream_shows_each_agent_then_the_answer(chat_client):
     names = [name for name, _ in events]
     nodes = [data["node"] for name, data in events if name == "node_end"]
     assert names[0] == "start"
-    assert nodes == ["supervisor", "retrieval", "response", "validator"]
+    assert nodes == ["input_guard", "supervisor", "retrieval", "response", "validator"]
     assert names[-1] == "done"
     assert events[-1][1]["answer"] == GOOD_ANSWER
 

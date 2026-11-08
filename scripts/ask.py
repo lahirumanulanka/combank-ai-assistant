@@ -27,9 +27,15 @@ async def main() -> None:
     result = await graph.ainvoke({"messages": [HumanMessage(args.question)]}, context=context)
 
     print(f"role:      {args.role}  (model: {settings.llm_strong})")
+    if result["guard"]["flagged"]:
+        print(f"BLOCKED by input guard: {result['guard']['reasons']}")
+        print(f"\n{result['messages'][-1].content}")
+        return
     print(f"route:     {result['route']}  - {result['rationale']}")
     print(f"searched:  {result['search_query']}")
     print(f"passages:  {[chunk['chunk_id'] for chunk in result.get('retrieved', [])]}")
+    if result.get("dropped"):
+        print(f"dropped:   {result['dropped']}  (prompt injection)")
     if result["route"] == "research":
         print(f"\nplan ({result['plan_source']}):\n{result['plan_code']}")
         print(f"batches:   {result['batches']}")

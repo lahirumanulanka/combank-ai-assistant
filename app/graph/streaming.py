@@ -14,6 +14,8 @@ def sse(event: str, data: dict) -> str:
 
 
 def summarize(node: str, update: dict) -> dict:
+    if node == "input_guard":
+        return {"flagged": update["guard"]["flagged"], "reasons": update["guard"]["reasons"]}
     if node == "supervisor":
         return {"route": update["route"], "rationale": update["rationale"],
                 "search_query": update["search_query"], "downgraded": bool(update.get("notice"))}
@@ -36,7 +38,7 @@ def summarize(node: str, update: dict) -> dict:
         return {"results": update["tool_results"]}
     if node == "retrieval":
         chunk_ids = [chunk["chunk_id"] for chunk in update["retrieved"]]
-        return {"found": len(chunk_ids), "chunk_ids": chunk_ids}
+        return {"found": len(chunk_ids), "chunk_ids": chunk_ids, "dropped": update.get("dropped", [])}
     if node == "response":
         return {"attempt": update["attempts"]}
     if node == "validator":
@@ -46,6 +48,7 @@ def summarize(node: str, update: dict) -> dict:
             "cited": validation.get("cited", []),
             "unknown": validation.get("unknown", []),
             "reason": validation.get("reason", ""),
+            "brand_ok": validation.get("brand_ok", True),
         }
     return {}
 
