@@ -27,6 +27,7 @@ def can_research(role: Role) -> bool:
 
 TOOL_ROLES: dict[str, set[Role]] = {
     "knowledge_search": {Role.VIEWER, Role.ANALYST, Role.ADMIN},
+    "python_analysis": {Role.ANALYST, Role.ADMIN},
     "lookup_employee": {Role.ANALYST, Role.ADMIN},
     "get_service": {Role.ANALYST, Role.ADMIN},
     "list_incident_records": {Role.ANALYST, Role.ADMIN},

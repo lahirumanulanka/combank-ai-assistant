@@ -16,6 +16,7 @@ class Row:
     service: str
     date: str
     tags: tuple[str, ...]
+    severity: str = "n/a"
 
 
 class CatalogView:
@@ -82,7 +83,7 @@ class Library:
 def _to_row(doc: Document) -> Row:
     meta = doc.meta
     return Row(meta.doc_id, meta.title, meta.document_type, meta.department, meta.service,
-               meta.created_date.isoformat(), tuple(meta.tags))
+               meta.created_date.isoformat(), tuple(meta.tags), meta.severity)
 
 
 def months_ago(months: int, today: date | None = None) -> str:

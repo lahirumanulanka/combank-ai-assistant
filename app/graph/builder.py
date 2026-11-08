@@ -30,6 +30,7 @@ from app.services.resilient_search import ResilientSearch
 from app.services.search import get_hybrid_search
 from app.tools.factory import build_tool_registry
 from app.tools.knowledge_search import make_knowledge_search
+from app.tools.python_analysis import make_python_analysis
 from app.tools.registry import ToolRegistry
 
 
@@ -37,7 +38,7 @@ def build_graph(llm, searcher, checkpointer=None, library: Library | None = None
                 registry: ToolRegistry | None = None):
     library = library or Library([])
     worker_llm = worker_llm or llm
-    registry = registry or ToolRegistry([make_knowledge_search(searcher)])
+    registry = registry or ToolRegistry([make_knowledge_search(searcher), make_python_analysis(library)])
     graph = StateGraph(AgentState, context_schema=RuntimeContext)
 
     graph.add_node("input_guard", input_guard)
@@ -95,5 +96,5 @@ async def build_default_graph(checkpointer=None):
         checkpointer=checkpointer,
         library=library,
         worker_llm=create_resilient_model(settings.llm_cheap, settings),
-        registry=await build_tool_registry(settings, searcher),
+        registry=await build_tool_registry(settings, searcher, library),
     )
