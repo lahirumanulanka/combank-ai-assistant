@@ -1,29 +1,57 @@
+import re
+
 from langchain_core.messages import AIMessage
 
 from app.core.rbac import Role
+from app.graph.nodes.research import BatchFindings, IncidentFinding, ResearchPlan
 from app.graph.nodes.supervisor import RoutePlan
 from app.services.search import SearchResult
 
+GOOD_ANSWER = "Passwords rotate every 90 days [POL-SEC-001#4]."
+DEFAULT_RESEARCH_PLAN = (
+    'rows = catalog.filter(document_type="incident", tag="payments", since="2025-11-07")\n'
+    "batches = batch(rows, size=2)"
+)
 
-class FakePlanner:
-    def __init__(self, plan: RoutePlan):
-        self.plan = plan
+
+class FakeStructured:
+    def __init__(self, respond):
+        self.respond = respond
 
     async def ainvoke(self, messages):
-        return self.plan
-
-
-GOOD_ANSWER = "Passwords rotate every 90 days [POL-SEC-001#4]."
+        return self.respond(messages)
 
 
 class FakeLLM:
-    def __init__(self, route: str = "qa", answer: str = GOOD_ANSWER, answers: list[str] | None = None):
+    def __init__(self, route: str = "qa", answer: str = GOOD_ANSWER, answers: list[str] | None = None,
+                 plan_code: str = DEFAULT_RESEARCH_PLAN, causes: dict[str, str] | None = None,
+                 fail_on: set[str] | None = None, irrelevant: set[str] | None = None):
         self.plan = RoutePlan(route=route, search_query="password rotation policy", rationale="policy question")
+        self.plan_code = plan_code
+        self.causes = causes or {}
+        self.fail_on = fail_on or set()
+        self.irrelevant = irrelevant or set()
         self.answers = answers or [answer]
         self.system_prompts: list[str] = []
+        self.worker_batches: list[list[str]] = []
 
     def with_structured_output(self, schema):
-        return FakePlanner(self.plan)
+        if schema is ResearchPlan:
+            return FakeStructured(lambda _: ResearchPlan(code=self.plan_code, rationale="payment incidents"))
+        if schema is BatchFindings:
+            return FakeStructured(self._find)
+        return FakeStructured(lambda _: self.plan)
+
+    def _find(self, messages) -> BatchFindings:
+        ids = re.findall(r"^### (\S+)", messages[0][1], flags=re.MULTILINE)
+        self.worker_batches.append(ids)
+        if self.fail_on & set(ids):
+            raise RuntimeError("worker model is down")
+        return BatchFindings(findings=[
+            IncidentFinding(incident_id=doc_id, root_cause_category=self.causes.get(doc_id, "other"),
+                            summary=f"{doc_id} failed", fix="fix it", relevant=doc_id not in self.irrelevant)
+            for doc_id in ids
+        ])
 
     async def ainvoke(self, messages):
         self.system_prompts.append(messages[0][1])
