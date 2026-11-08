@@ -42,6 +42,8 @@ def _retrieval(data: dict) -> tuple[str, str]:
     detail = f"found **{data['found']}** chunks: {found}"
     if data.get("dropped"):
         detail += f"  \n:red[dropped as prompt injection:] {_ids(data['dropped'])}"
+    if data.get("degraded"):
+        detail += "  \n:orange[Pinecone unavailable - using keyword-only backup search]"
     return "Retrieval", detail
 
 
@@ -91,6 +93,8 @@ def describe(event: str, data: dict) -> tuple[str, str] | None:
         return "Started", f"thread `{data['thread_id']}`"
     if event == "node_end":
         return describe_node(data)
+    if event == "notice" and data.get("type") == "llm_fallback":
+        return "Model fallback", f":orange[main model failed ({data['error']})] - switched to `{data['model']}`"
     if event == "interrupt":
         actions = "  \n".join(f"`{a['tool']}` {a['args']}" for a in data["actions"])
         return "Paused for approval", f":orange[waiting for a human decision]  \n{actions}"
