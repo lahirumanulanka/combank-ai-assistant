@@ -95,6 +95,8 @@ def describe(event: str, data: dict) -> tuple[str, str] | None:
         return describe_node(data)
     if event == "notice" and data.get("type") == "llm_fallback":
         return "Model fallback", f":orange[main model failed ({data['error']})] - switched to `{data['model']}`"
+    if event == "memory":
+        return "Memory", f"thread now holds **{data['thread_messages']}** messages (saved by the checkpointer)"
     if event == "interrupt":
         actions = "  \n".join(f"`{a['tool']}` {a['args']}" for a in data["actions"])
         return "Paused for approval", f":orange[waiting for a human decision]  \n{actions}"
