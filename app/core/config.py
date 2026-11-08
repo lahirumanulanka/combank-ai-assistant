@@ -48,6 +48,10 @@ class Settings(BaseSettings):
 
     checkpoint_db: str = "data/checkpoints.db"
 
+    mcp_url: str = "http://localhost:8001/mcp"
+    mcp_timeout_s: float = 5
+    tool_timeout_s: float = 10
+
 
 def require_secret(value: SecretStr | None, env_name: str) -> str:
     if value is None or not value.get_secret_value():
