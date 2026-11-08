@@ -11,7 +11,7 @@ MAX_ATTEMPTS = 2
 
 
 def needs_citations(state: AgentState) -> bool:
-    return state["route"] == "qa" and state["draft"] != prompts.NOT_FOUND
+    return state["route"] in ("qa", "research") and state["draft"] != prompts.NOT_FOUND
 
 
 async def validator(state: AgentState) -> dict:
