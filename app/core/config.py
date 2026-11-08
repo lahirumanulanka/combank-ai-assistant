@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     anthropic_api_key: SecretStr | None = None
     llm_strong: str = "anthropic:claude-sonnet-5-5"
     llm_cheap: str = "anthropic:claude-haiku-5-5"
+    llm_fallback: str = ""
     llm_timeout_s: float = 40
 
     checkpoint_db: str = "data/checkpoints.db"
@@ -51,6 +52,16 @@ class Settings(BaseSettings):
     mcp_url: str = "http://localhost:8001/mcp"
     mcp_timeout_s: float = 5
     tool_timeout_s: float = 10
+
+    pinecone_timeout_s: float = 5
+    breaker_failures: int = 3
+    breaker_cooldown_s: float = 30
+
+    chaos_llm_fail: bool = False
+    chaos_pinecone_fail: bool = False
+    chaos_mcp_down: bool = False
+    chaos_tool_slow_ms: int = 0
+    chaos_fake_citation: bool = False
 
 
 def require_secret(value: SecretStr | None, env_name: str) -> str:
