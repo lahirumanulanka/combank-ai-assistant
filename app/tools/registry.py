@@ -4,10 +4,12 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from langsmith import traceable
 from pydantic import ValidationError
 
 from app.core.logging import get_logger
 from app.core.rbac import Role, can_use_tool, lowest_role_for
+from app.core.tracing import without_self
 
 log = get_logger(__name__)
 
@@ -50,6 +52,7 @@ class ToolRegistry:
     def locked_for(self, role: Role) -> list[str]:
         return [f"{name} (needs {lowest_role_for(name).value})" for name in self._tools if not can_use_tool(role, name)]
 
+    @traceable(run_type="tool", name="tool_execute", process_inputs=without_self)
     async def execute(self, name: str, args: dict, role: Role) -> ToolOutcome:
         tool = self._tools.get(name)
         if tool is None:

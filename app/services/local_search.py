@@ -1,4 +1,7 @@
+from langsmith import traceable
+
 from app.core.rbac import Role, allowed_access_levels
+from app.core.tracing import as_documents, without_self
 from app.knowledge.bm25 import BM25Encoder
 from app.knowledge.catalog import Library
 from app.knowledge.chunking import Chunk, chunk_documents
@@ -21,6 +24,7 @@ class LocalSearch:
     def _to_dict(vector: dict) -> dict[int, float]:
         return dict(zip(vector["indices"], vector["values"], strict=True))
 
+    @traceable(run_type="retriever", name="local_bm25_search", process_inputs=without_self, process_outputs=as_documents)
     def search(self, query: str, role: Role, top_k: int = 8, document_type: str | None = None) -> list[SearchResult]:
         query_weights = self._to_dict(self._bm25.encode_query(query))
         allowed = allowed_access_levels(role)

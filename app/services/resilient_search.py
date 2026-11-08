@@ -1,7 +1,10 @@
 import asyncio
 
+from langsmith import traceable
+
 from app.core.logging import get_logger
 from app.core.rbac import Role
+from app.core.tracing import as_documents, without_self
 from app.services.local_search import LocalSearch
 from app.services.resilience import CircuitBreaker
 from app.services.search import SearchResult
@@ -17,6 +20,7 @@ class ResilientSearch:
         self._timeout_s = timeout_s
         self._chaos = chaos
 
+    @traceable(run_type="chain", name="resilient_search", process_inputs=without_self, process_outputs=as_documents)
     async def search(self, query: str, role: Role, document_type: str | None = None, **filters) -> list[SearchResult]:
         if self._breaker.is_open():
             log.warning("vector_db_circuit_open", fallback="local_bm25")

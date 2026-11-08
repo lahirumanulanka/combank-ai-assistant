@@ -1,5 +1,7 @@
 import ast
 
+from langsmith import traceable
+
 from app.knowledge.catalog import CatalogView, Row, months_ago
 
 MAX_BATCHES = 8
@@ -57,6 +59,7 @@ def check_plan(code: str) -> ast.Module:
     return tree
 
 
+@traceable(run_type="tool", name="sandbox_run_plan", process_inputs=lambda inputs: {"code": inputs["code"]})
 def run_plan(code: str, view: CatalogView) -> list[list[str]]:
     tree = check_plan(code)
     namespace = {"catalog": view, "batch": batch, "months_ago": months_ago, "unique": unique}
