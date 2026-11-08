@@ -28,3 +28,14 @@ class ChatRequest(BaseModel):
 class ResumeRequest(BaseModel):
     thread_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
     approved: bool
+
+
+class FeedbackRequest(BaseModel):
+    run_id: str = Field(pattern=r"^[0-9a-f-]{36}$")
+    score: int = Field(ge=0, le=1)
+    comment: str | None = Field(default=None, max_length=500)
+
+
+class FeedbackResponse(BaseModel):
+    recorded: bool
+    sent_to_langsmith: bool

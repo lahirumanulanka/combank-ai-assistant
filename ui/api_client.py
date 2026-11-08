@@ -51,6 +51,15 @@ class ApiClient:
         _raise_for_error(response)
         return response.json()
 
+    def send_feedback(self, token: str, run_id: str, score: int) -> dict:
+        try:
+            response = httpx.post(f"{self.base_url}/feedback", json={"run_id": run_id, "score": score},
+                                  headers={"Authorization": f"Bearer {token}"}, timeout=10)
+        except httpx.ConnectError:
+            raise ApiError(0, f"Cannot reach the API at {self.base_url}. Is it running?") from None
+        _raise_for_error(response)
+        return response.json()
+
     def stream_chat(self, token: str, message: str, thread_id: str | None = None) -> Iterator[tuple[str, dict]]:
         yield from self._stream("/chat/stream", token, {"message": message, "thread_id": thread_id})
 

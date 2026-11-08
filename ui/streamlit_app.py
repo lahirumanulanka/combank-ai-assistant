@@ -9,6 +9,7 @@ client = ApiClient()
 
 
 def start_new_chat() -> None:
+    st.session_state.rated = set()
     st.session_state.thread_id = None
     st.session_state.pending = None
     st.session_state.messages = []
@@ -66,7 +67,7 @@ def stream_answer(events, chat_col, box, user_text: str | None = None) -> None:
 
         with st.chat_message("assistant"):
             placeholder = st.empty()
-            text, answer, sources, pending = "", "", [], None
+            text, answer, sources, pending, run_id = "", "", [], None, None
             started = time.time()
             try:
                 for event, data in events:
@@ -84,6 +85,7 @@ def stream_answer(events, chat_col, box, user_text: str | None = None) -> None:
                         pending = data
                     elif event == "done":
                         answer = data["answer"]
+                        run_id = data.get("run_id")
                     elif event == "error":
                         answer = data["message"]
 
@@ -104,10 +106,25 @@ def stream_answer(events, chat_col, box, user_text: str | None = None) -> None:
 
     if user_text:
         st.session_state.messages.append({"role": "user", "content": user_text})
-    st.session_state.messages.append({"role": "assistant", "content": answer or text, "sources": sources})
+    st.session_state.messages.append(
+        {"role": "assistant", "content": answer or text, "sources": sources, "run_id": run_id}
+    )
     if pending:
         st.session_state.pending = pending
         st.rerun()
+
+
+def feedback_buttons(run_id: str) -> None:
+    rating = st.feedback("thumbs", key=f"feedback-{run_id}")
+    if rating is None or run_id in st.session_state.rated:
+        return
+    try:
+        result = client.send_feedback(st.session_state.token, run_id, rating)
+    except ApiError as exc:
+        st.toast(exc.message)
+        return
+    st.session_state.rated.add(run_id)
+    st.toast("Thanks! Feedback sent to LangSmith." if result["sent_to_langsmith"] else "Thanks! Feedback recorded.")
 
 
 def approval_box(pending: dict) -> bool | None:
@@ -145,6 +162,8 @@ def chat_screen() -> None:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
                 show_sources(message.get("sources", []))
+                if message.get("run_id"):
+                    feedback_buttons(message["run_id"])
         if pending:
             decision = approval_box(pending)
 
