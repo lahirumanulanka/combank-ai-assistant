@@ -7,6 +7,7 @@ from langgraph.types import Command
 from app.graph.context import RuntimeContext
 
 ANSWER_NODES = {"response", "tool_agent"}
+ANSWER_WRITERS = {"validator", "blocked_response"}
 
 
 def sse(event: str, data: dict) -> str:
@@ -86,7 +87,10 @@ async def stream_events(graph, graph_input, config: dict, context: RuntimeContex
                 continue
             update = update or {}
             yield sse("node_end", {"node": node, **summarize(node, update)})
-            if node == "validator" and update.get("messages"):
+            if node in ANSWER_WRITERS and update.get("messages"):
                 answer = update["messages"][-1].content
 
+    if not waiting:
+        snapshot = await graph.aget_state(config)
+        yield sse("memory", {"thread_messages": len(snapshot.values.get("messages", []))})
     yield sse("done", {"answer": answer, "awaiting_approval": waiting, "run_id": str(config.get("run_id", ""))})

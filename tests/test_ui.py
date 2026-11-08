@@ -47,3 +47,10 @@ def test_validator_step_shows_pass_or_reject_reason():
 
     assert "passed" in passed and "`POL-SEC-001#4`" in passed
     assert "rejected" in rejected and "no citations" in rejected
+
+
+def test_memory_event_is_shown_in_the_panel():
+    title, detail = describe("memory", {"thread_messages": 4})
+
+    assert title == "Memory"
+    assert "**4** messages" in detail

@@ -25,6 +25,7 @@ async def request_context_middleware(request: Request, call_next):
     response = await call_next(request)
     duration_ms = round((time.perf_counter() - started) * 1000, 1)
 
-    log.info("request_finished", status=response.status_code, duration_ms=duration_ms)
+    if not (request.url.path == "/health" and response.status_code == 200):
+        log.info("request_finished", status=response.status_code, duration_ms=duration_ms)
     response.headers[REQUEST_ID_HEADER] = request_id
     return response

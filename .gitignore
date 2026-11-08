@@ -8,3 +8,4 @@ data/*.db
 data/*.db-*
 .DS_Store
 data/bm25_params.json
+video/
