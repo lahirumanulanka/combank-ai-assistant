@@ -1,3 +1,5 @@
+import json
+
 from langgraph.runtime import Runtime
 
 from app.core.config import get_settings
@@ -12,6 +14,23 @@ def format_passages(retrieved: list[dict]) -> str:
     )
 
 
+def build_system_prompt(state: AgentState, details: dict) -> str:
+    passages = format_passages(state["retrieved"])
+    if state["route"] == "research":
+        system = prompts.RESEARCH_RESPONSE.format(
+            **details, analysis=json.dumps(state.get("analysis", {}), indent=1), passages=passages
+        )
+    else:
+        system = prompts.RESPONSE.format(**details, passages=passages)
+
+    if state.get("notice"):
+        system += "\n\n" + state["notice"]
+    rejection = state.get("validation", {}).get("reason")
+    if rejection:
+        system += prompts.RETRY_FEEDBACK.format(reason=rejection)
+    return system
+
+
 def make_response(llm):
     async def response(state: AgentState, runtime: Runtime[RuntimeContext]) -> dict:
         user = runtime.context
@@ -23,10 +42,7 @@ def make_response(llm):
         elif not state.get("retrieved"):
             return {"draft": prompts.NOT_FOUND, "attempts": attempts}
         else:
-            system = prompts.RESPONSE.format(**details, passages=format_passages(state["retrieved"]))
-            rejection = state.get("validation", {}).get("reason")
-            if rejection:
-                system += prompts.RETRY_FEEDBACK.format(reason=rejection)
+            system = build_system_prompt(state, details)
 
         answer = await llm.ainvoke([("system", system), *state["messages"][-6:]])
         return {"draft": answer.content, "attempts": attempts}

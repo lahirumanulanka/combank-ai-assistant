@@ -30,6 +30,13 @@ async def main() -> None:
     print(f"route:     {result['route']}  - {result['rationale']}")
     print(f"searched:  {result['search_query']}")
     print(f"passages:  {[chunk['chunk_id'] for chunk in result.get('retrieved', [])]}")
+    if result["route"] == "research":
+        print(f"\nplan ({result['plan_source']}):\n{result['plan_code']}")
+        print(f"batches:   {result['batches']}")
+        print(f"coverage:  {result['analysis']['coverage']}  period: {result['analysis']['period']}")
+        print(f"excluded:  {result['analysis']['excluded']}")
+        for cause in result["analysis"]["root_causes"]:
+            print(f"  {cause['count']}  {cause['cause']:<28} {cause['incidents']}")
     print(f"\n{result['messages'][-1].content}")
 
 

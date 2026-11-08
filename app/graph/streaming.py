@@ -12,7 +12,19 @@ def sse(event: str, data: dict) -> str:
 
 def summarize(node: str, update: dict) -> dict:
     if node == "supervisor":
-        return {"route": update["route"], "rationale": update["rationale"], "search_query": update["search_query"]}
+        return {"route": update["route"], "rationale": update["rationale"],
+                "search_query": update["search_query"], "downgraded": bool(update.get("notice"))}
+    if node == "research_plan":
+        return {"code": update["plan_code"], "rationale": update["plan_rationale"]}
+    if node == "research_execute":
+        return {"source": update["plan_source"], "batches": update["batches"]}
+    if node == "research_worker":
+        return {"analysed": [finding["incident_id"] for finding in update.get("findings", [])],
+                "errors": update.get("research_errors", [])}
+    if node == "research_aggregate":
+        analysis = update["analysis"]
+        return {"coverage": analysis["coverage"], "period": analysis["period"],
+                "excluded": analysis["excluded"], "root_causes": analysis["root_causes"]}
     if node == "retrieval":
         chunk_ids = [chunk["chunk_id"] for chunk in update["retrieved"]]
         return {"found": len(chunk_ids), "chunk_ids": chunk_ids}
