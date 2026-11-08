@@ -16,6 +16,8 @@ class AgentState(TypedDict, total=False):
     messages: Annotated[list[AnyMessage], add_messages]
     route: Route
     rationale: str
+    guard: dict
+    dropped: list[str]
     notice: str
     search_query: str
     retrieved: list[dict]

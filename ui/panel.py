@@ -31,9 +31,18 @@ def _research_aggregate(data: dict) -> tuple[str, str]:
     return "Aggregator", f"coverage **{data['coverage']}**, {data['period']}{excluded}  \n" + "\n".join(lines)
 
 
+def _input_guard(data: dict) -> tuple[str, str]:
+    if data["flagged"]:
+        return "Input guard", f":red[blocked] - looks like {', '.join(data['reasons'])}"
+    return "Input guard", ":green[passed]"
+
+
 def _retrieval(data: dict) -> tuple[str, str]:
     found = _ids(data["chunk_ids"]) or "nothing above the minimum score"
-    return "Retrieval", f"found **{data['found']}** chunks: {found}"
+    detail = f"found **{data['found']}** chunks: {found}"
+    if data.get("dropped"):
+        detail += f"  \n:red[dropped as prompt injection:] {_ids(data['dropped'])}"
+    return "Retrieval", detail
 
 
 def _tool_agent(data: dict) -> tuple[str, str]:
@@ -57,6 +66,8 @@ def _validator(data: dict) -> tuple[str, str]:
 
 
 DESCRIBERS = {
+    "input_guard": _input_guard,
+    "blocked_response": lambda data: ("Blocked", "sent a polite refusal; no AI model was called"),
     "supervisor": _supervisor,
     "retrieval": _retrieval,
     "research_plan": _research_plan,
