@@ -32,6 +32,7 @@ def make_tool_agent(llm, registry: ToolRegistry):
             locked=", ".join(registry.locked_for(user.role)) or "none",
             mcp_note="" if registry.mcp_available else prompts.MCP_DOWN_NOTE,
         )
+        system += prompts.BRAND_RULES
         rejection = state.get("validation", {}).get("reason")
         if rejection:
             system += prompts.RETRY_FEEDBACK.format(reason=rejection)

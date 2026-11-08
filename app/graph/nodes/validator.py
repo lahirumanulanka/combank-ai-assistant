@@ -3,30 +3,39 @@ from langchain_core.messages import AIMessage
 from app.core.logging import get_logger
 from app.graph import prompts
 from app.graph.state import AgentState
+from app.guards.brand import check_brand
 from app.guards.citations import check_citations
 
 log = get_logger(__name__)
 
 MAX_ATTEMPTS = 2
+CITED_ROUTES = {"qa", "research", "tool"}
 
 
-def needs_check(state: AgentState) -> bool:
-    return state["route"] in ("qa", "research", "tool") and state["draft"] != prompts.NOT_FOUND
+def decide(state: AgentState, result: dict, fallback: str) -> dict:
+    if result["ok"]:
+        return {"validation": result, "messages": [AIMessage(state["draft"])]}
+    if state["attempts"] < MAX_ATTEMPTS:
+        return {"validation": result}
+    return {"validation": result, "messages": [AIMessage(fallback)]}
 
 
 async def validator(state: AgentState) -> dict:
-    if not needs_check(state):
-        return {"validation": {"ok": True}, "messages": [AIMessage(state["draft"])]}
+    draft = state["draft"]
+
+    brand = check_brand(draft)
+    if not brand.ok:
+        log.warning("brand_violation", reason=brand.reason, attempt=state["attempts"])
+        result = {"ok": False, "brand_ok": False, "cited": [], "unknown": [], "reason": brand.reason}
+        return decide(state, result, fallback=prompts.BRAND_SAFE)
+
+    if state["route"] not in CITED_ROUTES or draft == prompts.NOT_FOUND:
+        return decide(state, {"ok": True, "brand_ok": True, "cited": [], "unknown": [], "reason": ""}, "")
 
     retrieved_ids = [chunk["chunk_id"] for chunk in state.get("retrieved", [])]
-    check = check_citations(state["draft"], retrieved_ids, require=state["route"] != "tool")
+    check = check_citations(draft, retrieved_ids, require=state["route"] != "tool")
     log.info("validation", ok=check.ok, cited=check.cited, unknown=check.unknown, attempt=state["attempts"])
-
-    if check.ok:
-        return {"validation": check.model_dump(), "messages": [AIMessage(state["draft"])]}
-    if state["attempts"] < MAX_ATTEMPTS:
-        return {"validation": check.model_dump()}
-    return {"validation": check.model_dump(), "messages": [AIMessage(prompts.UNVERIFIED)]}
+    return decide(state, {**check.model_dump(), "brand_ok": True}, fallback=prompts.UNVERIFIED)
 
 
 def route_after_validation(state: AgentState) -> str:

@@ -10,7 +10,9 @@ from app.graph.state import AgentState
 
 def format_passages(retrieved: list[dict]) -> str:
     return "\n\n".join(
-        f"[{chunk['chunk_id']}] ({chunk['title']} - {chunk['section']})\n{chunk['text']}" for chunk in retrieved
+        f"<<doc id=\"{chunk['chunk_id']}\" title=\"{chunk['title']}\" section=\"{chunk['section']}\">>\n"
+        f"{chunk['text']}\n<</doc>>"
+        for chunk in retrieved
     )
 
 
@@ -25,10 +27,7 @@ def build_system_prompt(state: AgentState, details: dict) -> str:
 
     if state.get("notice"):
         system += "\n\n" + state["notice"]
-    rejection = state.get("validation", {}).get("reason")
-    if rejection:
-        system += prompts.RETRY_FEEDBACK.format(reason=rejection)
-    return system
+    return system + prompts.SPOTLIGHT_RULE
 
 
 def make_response(llm):
@@ -43,6 +42,11 @@ def make_response(llm):
             return {"draft": prompts.NOT_FOUND, "attempts": attempts}
         else:
             system = build_system_prompt(state, details)
+
+        system += prompts.BRAND_RULES
+        rejection = state.get("validation", {}).get("reason")
+        if rejection:
+            system += prompts.RETRY_FEEDBACK.format(reason=rejection)
 
         answer = await llm.ainvoke([("system", system), *state["messages"][-6:]])
         return {"draft": answer.content, "attempts": attempts}
