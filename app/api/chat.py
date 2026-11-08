@@ -35,8 +35,21 @@ async def has_pending_approval(graph, config: dict) -> bool:
     return bool(snapshot.interrupts)
 
 
-def event_stream(graph, graph_input, config: dict, user: User, thread_id: str) -> StreamingResponse:
+def traced_config(config: dict, user: User, thread_id: str, run_name: str) -> dict:
+    return {
+        **config,
+        "run_id": uuid.uuid4(),
+        "run_name": run_name,
+        "tags": ["chat", f"role:{user.role.value}"],
+        "metadata": {"user": user.username, "role": user.role.value, "thread_id": thread_id},
+    }
+
+
+def event_stream(graph, graph_input, config: dict, user: User, thread_id: str, request: Request,
+                 run_name: str) -> StreamingResponse:
     context = RuntimeContext(user_id=user.username, role=user.role, name=user.name)
+    config = traced_config(config, user, thread_id, run_name)
+    request.app.state.run_owners.add(str(config["run_id"]), user.username)
     log_context = structlog.contextvars.get_contextvars()
 
     async def events():
@@ -64,7 +77,7 @@ async def chat_stream(body: ChatRequest, user: RateLimitedUser, request: Request
         raise ApprovalConflict("An admin action is waiting for approval. Approve or reject it first.")
 
     log.info("chat_started", thread_id=thread_id)
-    return event_stream(graph, new_message(body.message), config, user, thread_id)
+    return event_stream(graph, new_message(body.message), config, user, thread_id, request, "chat_turn")
 
 
 @router.post("/resume")
@@ -75,4 +88,5 @@ async def chat_resume(body: ResumeRequest, user: RateLimitedUser, request: Reque
         raise ApprovalConflict("There is no action waiting for approval in this chat.")
 
     log.warning("human_decision", thread_id=body.thread_id, approved=body.approved)
-    return event_stream(graph, human_decision(body.approved), config, user, body.thread_id)
+    return event_stream(graph, human_decision(body.approved), config, user, body.thread_id, request,
+                        "approval_resume")
