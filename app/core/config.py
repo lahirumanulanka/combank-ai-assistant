@@ -57,6 +57,11 @@ class Settings(BaseSettings):
     breaker_failures: int = 3
     breaker_cooldown_s: float = 30
 
+    langsmith_tracing: bool = True
+    langsmith_api_key: SecretStr | None = None
+    langsmith_project: str = "commbank-assistant"
+    langsmith_endpoint: str = "https://api.smith.langchain.com"
+
     chaos_llm_fail: bool = False
     chaos_pinecone_fail: bool = False
     chaos_mcp_down: bool = False

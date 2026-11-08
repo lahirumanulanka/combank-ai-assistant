@@ -89,4 +89,4 @@ async def stream_events(graph, graph_input, config: dict, context: RuntimeContex
             if node == "validator" and update.get("messages"):
                 answer = update["messages"][-1].content
 
-    yield sse("done", {"answer": answer, "awaiting_approval": waiting})
+    yield sse("done", {"answer": answer, "awaiting_approval": waiting, "run_id": str(config.get("run_id", ""))})

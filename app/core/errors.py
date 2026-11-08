@@ -48,3 +48,8 @@ class LLMUnavailable(AppError):
 
     def __init__(self):
         super().__init__("The AI model is unavailable right now. Please try again in a minute.")
+
+
+class NotFound(AppError):
+    status_code = 404
+    code = "not_found"

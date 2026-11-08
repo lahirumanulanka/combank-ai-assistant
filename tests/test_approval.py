@@ -106,7 +106,9 @@ def test_api_streams_the_pause_and_resumes_after_approval(admin_client):
                                                                "thread_id": "t1"}).text)
     names = [name for name, _ in first]
     assert "interrupt" in names
-    assert first[-1] == ("done", {"answer": "", "awaiting_approval": True})
+    done = first[-1][1]
+    assert (done["answer"], done["awaiting_approval"]) == ("", True)
+    assert len(done["run_id"]) == 36
 
     second = parse_sse(admin_client.post("/chat/resume", json={"thread_id": "t1", "approved": True}).text)
 

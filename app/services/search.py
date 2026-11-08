@@ -4,11 +4,13 @@ from functools import lru_cache
 from pathlib import Path
 from typing import get_args
 
+from langsmith import traceable
 from pydantic import BaseModel
 
 from app.core.config import Settings, get_settings
 from app.core.logging import get_logger
 from app.core.rbac import Role
+from app.core.tracing import as_documents, without_self
 from app.knowledge.bm25 import BM25Encoder
 from app.knowledge.documents import Department
 from app.knowledge.hybrid import build_filter, scale_for_hybrid
@@ -51,6 +53,7 @@ class HybridSearch:
             settings.retrieval_top_k,
         )
 
+    @traceable(run_type="retriever", name="pinecone_hybrid_search", process_inputs=without_self, process_outputs=as_documents)
     async def search(
         self,
         query: str,
