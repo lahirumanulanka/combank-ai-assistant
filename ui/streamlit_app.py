@@ -10,6 +10,7 @@ client = ApiClient()
 
 def start_new_chat() -> None:
     st.session_state.thread_id = None
+    st.session_state.pending = None
     st.session_state.messages = []
     st.session_state.activity = []
 
@@ -57,17 +58,18 @@ def show_sources(sources: list[str]) -> None:
         st.caption("Sources: " + ", ".join(f"`{source}`" for source in sources))
 
 
-def run_turn(prompt: str, chat_col, box) -> None:
+def stream_answer(events, chat_col, box, user_text: str | None = None) -> None:
     with chat_col:
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        if user_text:
+            with st.chat_message("user"):
+                st.markdown(user_text)
 
         with st.chat_message("assistant"):
             placeholder = st.empty()
-            text, answer, sources = "", "", []
+            text, answer, sources, pending = "", "", [], None
             started = time.time()
             try:
-                for event, data in client.stream_chat(st.session_state.token, prompt, st.session_state.thread_id):
+                for event, data in events:
                     if event == "token":
                         text += data["text"]
                         placeholder.markdown(text + "▌")
@@ -78,6 +80,8 @@ def run_turn(prompt: str, chat_col, box) -> None:
                         sources = data["cited"]
                         if not data["ok"]:
                             text = ""
+                    elif event == "interrupt":
+                        pending = data
                     elif event == "done":
                         answer = data["answer"]
                     elif event == "error":
@@ -93,16 +97,36 @@ def run_turn(prompt: str, chat_col, box) -> None:
                 if exc.status == 401:
                     answer += " Please sign out and sign in again."
 
+            if pending:
+                answer = "This needs a human decision before it runs. Please approve or reject it below."
             placeholder.markdown(answer or text)
             show_sources(sources)
 
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    if user_text:
+        st.session_state.messages.append({"role": "user", "content": user_text})
     st.session_state.messages.append({"role": "assistant", "content": answer or text, "sources": sources})
+    if pending:
+        st.session_state.pending = pending
+        st.rerun()
+
+
+def approval_box(pending: dict) -> bool | None:
+    with st.container(border=True):
+        st.warning(pending["question"])
+        for action in pending["actions"]:
+            st.code(f"{action['tool']}({action['args']})")
+        approve_col, reject_col = st.columns(2)
+        if approve_col.button("Approve", type="primary", use_container_width=True):
+            return True
+        if reject_col.button("Reject", use_container_width=True):
+            return False
+    return None
 
 
 def chat_screen() -> None:
     sidebar()
-    prompt = st.chat_input("Ask about policies, incidents, runbooks, specs...")
+    pending = st.session_state.get("pending")
+    prompt = st.chat_input("Ask about policies, incidents, runbooks, specs...", disabled=bool(pending))
     if prompt:
         st.session_state.activity = []
 
@@ -114,15 +138,24 @@ def chat_screen() -> None:
         for item in st.session_state.activity:
             show_step(box, *item)
 
+    decision = None
     with chat_col:
         st.subheader("Chat")
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
                 show_sources(message.get("sources", []))
+        if pending:
+            decision = approval_box(pending)
 
     if prompt:
-        run_turn(prompt, chat_col, box)
+        stream_answer(client.stream_chat(st.session_state.token, prompt, st.session_state.thread_id),
+                      chat_col, box, user_text=prompt)
+    elif decision is not None:
+        st.session_state.pending = None
+        events = client.resume_chat(st.session_state.token, st.session_state.thread_id, decision)
+        stream_answer(events, chat_col, box, user_text="Approved." if decision else "Rejected.")
+        st.rerun()
 
 
 if "token" in st.session_state:
