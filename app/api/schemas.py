@@ -23,3 +23,8 @@ class MeResponse(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     thread_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,64}$")
+
+
+class ResumeRequest(BaseModel):
+    thread_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    approved: bool
