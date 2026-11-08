@@ -2,13 +2,15 @@ import asyncio
 
 from langchain_core.messages import AIMessage, ToolMessage
 from langgraph.runtime import Runtime
+from langgraph.types import interrupt
 
 from app.core.config import get_settings
 from app.core.logging import get_logger
+from app.core.rbac import Role, can_use_tool, needs_approval
 from app.graph import prompts
 from app.graph.context import RuntimeContext
 from app.graph.state import AgentState
-from app.tools.registry import ToolRegistry
+from app.tools.registry import ToolOutcome, ToolRegistry
 
 log = get_logger(__name__)
 
@@ -50,11 +52,29 @@ def route_after_tool_agent(state: AgentState) -> str:
     return "tool_executor" if state["tool_messages"][-1].tool_calls else "validator"
 
 
+def ask_for_approval(calls: list[dict], role: Role) -> bool:
+    risky = [call for call in calls if needs_approval(call["name"]) and can_use_tool(role, call["name"])]
+    if not risky:
+        return True
+    decision = interrupt({
+        "question": "The assistant wants to run an admin action. Approve?",
+        "actions": [{"tool": call["name"], "args": call["args"]} for call in risky],
+    })
+    return bool(decision.get("approved"))
+
+
+async def run_call(registry: ToolRegistry, call: dict, role: Role, approved: bool) -> ToolOutcome:
+    if needs_approval(call["name"]) and can_use_tool(role, call["name"]) and not approved:
+        return ToolOutcome("rejected", f"A human reviewer rejected '{call['name']}'. Do not retry it.")
+    return await registry.execute(call["name"], call["args"], role)
+
+
 def make_tool_executor(registry: ToolRegistry):
     async def tool_executor(state: AgentState, runtime: Runtime[RuntimeContext]) -> dict:
         role = runtime.context.role
         calls = state["tool_messages"][-1].tool_calls
-        outcomes = await asyncio.gather(*[registry.execute(call["name"], call["args"], role) for call in calls])
+        approved = ask_for_approval(calls, role)
+        outcomes = await asyncio.gather(*[run_call(registry, call, role, approved) for call in calls])
 
         retrieved = list(state.get("retrieved", []))
         messages, results = [], []
