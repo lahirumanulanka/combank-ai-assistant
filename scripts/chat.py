@@ -23,7 +23,7 @@ async def main() -> None:
 
     user = get_user(args.role)
     context = RuntimeContext(user_id=user.username, role=user.role, name=user.name)
-    graph = build_default_graph(checkpointer=InMemorySaver())
+    graph = await build_default_graph(checkpointer=InMemorySaver())
     config = {"configurable": {"thread_id": f"{user.username}-{uuid.uuid4().hex[:8]}"}}
 
     print(f"Chatting as {user.name} ({args.role}). Type 'exit' to stop.\n")

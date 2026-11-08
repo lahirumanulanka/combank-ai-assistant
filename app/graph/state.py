@@ -3,7 +3,7 @@ from typing import Annotated, Literal, TypedDict
 from langchain_core.messages import AnyMessage
 from langgraph.graph.message import add_messages
 
-Route = Literal["qa", "research", "chitchat"]
+Route = Literal["qa", "research", "tool", "chitchat"]
 
 
 def add_or_reset(current: list | None, update: list | None) -> list:
@@ -29,6 +29,9 @@ class AgentState(TypedDict, total=False):
     findings: Annotated[list[dict], add_or_reset]
     research_errors: Annotated[list[str], add_or_reset]
     analysis: dict
+    tools_bound: list[str]
+    tool_messages: Annotated[list[AnyMessage], add_or_reset]
+    tool_results: list[dict]
 
 
 class WorkerInput(TypedDict):

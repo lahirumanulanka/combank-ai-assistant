@@ -22,7 +22,7 @@ async def main() -> None:
 
     user = get_user(args.role)
     context = RuntimeContext(user_id=user.username, role=user.role, name=user.name)
-    graph = build_default_graph()
+    graph = await build_default_graph()
 
     result = await graph.ainvoke({"messages": [HumanMessage(args.question)]}, context=context)
 

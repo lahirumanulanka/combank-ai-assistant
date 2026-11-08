@@ -10,7 +10,7 @@ from app.graph.state import AgentState, Route
 
 log = get_logger(__name__)
 
-NEXT_NODE = {"qa": "retrieval", "research": "research_plan", "chitchat": "response"}
+NEXT_NODE = {"qa": "retrieval", "research": "research_plan", "tool": "tool_agent", "chitchat": "response"}
 
 
 class RoutePlan(BaseModel):
@@ -46,6 +46,9 @@ def make_supervisor(llm):
             "findings": None,
             "research_errors": None,
             "analysis": {},
+            "tools_bound": [],
+            "tool_messages": None,
+            "tool_results": [],
         }
 
     return supervisor

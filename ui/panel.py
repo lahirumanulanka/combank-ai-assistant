@@ -36,6 +36,20 @@ def _retrieval(data: dict) -> tuple[str, str]:
     return "Retrieval", f"found **{data['found']}** chunks: {found}"
 
 
+def _tool_agent(data: dict) -> tuple[str, str]:
+    tools = ", ".join(f"`{name}`" for name in data["tools"]) or "none"
+    if not data["calls"]:
+        return "Tool agent", f"tools for this role: {tools}  \nwriting the answer"
+    calls = "  \n".join(f"calling `{call['name']}` {call['args']}" for call in data["calls"])
+    return "Tool agent", f"tools for this role: {tools}  \n{calls}"
+
+
+def _tool_executor(data: dict) -> tuple[str, str]:
+    colours = {"ok": "green", "denied": "red", "unknown": "red"}
+    lines = [f"`{r['tool']}`: :{colours.get(r['status'], 'orange')}[{r['status']}]" for r in data["results"]]
+    return "Tool executor", "  \n".join(lines)
+
+
 def _validator(data: dict) -> tuple[str, str]:
     if not data["ok"]:
         return "Validator", f":red[rejected] - {data['reason']}"
@@ -49,6 +63,8 @@ DESCRIBERS = {
     "research_execute": _research_execute,
     "research_worker": _research_worker,
     "research_aggregate": _research_aggregate,
+    "tool_agent": _tool_agent,
+    "tool_executor": _tool_executor,
     "response": lambda data: ("Response agent", f"draft written (attempt {data['attempt']})"),
     "validator": _validator,
 }
