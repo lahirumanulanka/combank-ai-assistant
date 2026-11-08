@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     async with AsyncSqliteSaver.from_conn_string(settings.checkpoint_db) as checkpointer:
         try:
-            app.state.graph = build_default_graph(checkpointer)
+            app.state.graph = await build_default_graph(checkpointer)
             log.info("assistant_ready", model=settings.llm_strong)
         except (MissingSetting, FileNotFoundError) as exc:
             log.warning("assistant_disabled", reason=str(exc))
