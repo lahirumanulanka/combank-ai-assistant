@@ -16,3 +16,10 @@ ACCESS_LEVELS: dict[Role, list[str]] = {
 
 def allowed_access_levels(role: Role) -> list[str]:
     return ACCESS_LEVELS[role]
+
+
+RESEARCH_ROLES = {Role.ANALYST, Role.ADMIN}
+
+
+def can_research(role: Role) -> bool:
+    return role in RESEARCH_ROLES
