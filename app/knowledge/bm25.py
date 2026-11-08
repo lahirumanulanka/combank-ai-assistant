@@ -19,8 +19,18 @@ class SparseVector(TypedDict):
     values: list[float]
 
 
+SUFFIXES = ("ions", "ion", "ing", "ed", "es", "s", "e")
+
+
+def stem(token: str) -> str:
+    for suffix in SUFFIXES:
+        if token.endswith(suffix) and len(token) - len(suffix) >= 3:
+            return token[: -len(suffix)]
+    return token
+
+
 def tokenize(text: str) -> list[str]:
-    return [token for token in TOKEN_PATTERN.findall(text.lower()) if token not in STOP_WORDS]
+    return [stem(token) for token in TOKEN_PATTERN.findall(text.lower()) if token not in STOP_WORDS]
 
 
 def token_id(token: str) -> int:
