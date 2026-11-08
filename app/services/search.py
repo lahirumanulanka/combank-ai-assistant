@@ -29,6 +29,7 @@ class SearchResult(BaseModel):
     score: float
     namespace: str
     access_level: str
+    source: str = "pinecone"
 
 
 class HybridSearch:

@@ -39,6 +39,7 @@ def make_supervisor(llm):
             "rationale": plan.rationale,
             "retrieved": [],
             "dropped": [],
+            "degraded": False,
             "draft": "",
             "attempts": 0,
             "validation": {},

@@ -27,6 +27,8 @@ def build_system_prompt(state: AgentState, details: dict) -> str:
 
     if state.get("notice"):
         system += "\n\n" + state["notice"]
+    if state.get("degraded"):
+        system += prompts.DEGRADED_NOTE
     return system + prompts.SPOTLIGHT_RULE
 
 
@@ -49,6 +51,9 @@ def make_response(llm):
             system += prompts.RETRY_FEEDBACK.format(reason=rejection)
 
         answer = await llm.ainvoke([("system", system), *state["messages"][-6:]])
-        return {"draft": answer.content, "attempts": attempts}
+        draft = answer.content
+        if get_settings().chaos_fake_citation and attempts == 1 and state["route"] != "chitchat":
+            draft += " [INC-1999-01-01#9]"
+        return {"draft": draft, "attempts": attempts}
 
     return response

@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 
 from app.api.deps import RateLimitedUser
 from app.api.schemas import ChatRequest, ResumeRequest
-from app.core.errors import ApprovalConflict, AssistantUnavailable
+from app.core.errors import ApprovalConflict, AssistantUnavailable, LLMUnavailable
 from app.core.logging import get_logger
 from app.core.users import User
 from app.graph.context import RuntimeContext
@@ -45,6 +45,9 @@ def event_stream(graph, graph_input, config: dict, user: User, thread_id: str) -
         try:
             async for event in stream_events(graph, graph_input, config, context):
                 yield event
+        except LLMUnavailable as exc:
+            log.error("chat_llm_unavailable", thread_id=thread_id)
+            yield sse("error", {"message": exc.message})
         except Exception:
             log.exception("chat_failed", thread_id=thread_id)
             yield sse("error", {"message": "Something went wrong while answering. Please try again."})

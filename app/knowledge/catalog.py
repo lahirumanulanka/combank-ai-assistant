@@ -64,6 +64,10 @@ class Library:
     def from_folder(cls, folder: Path) -> "Library":
         return cls(load_documents(folder))
 
+    @property
+    def documents(self) -> list[Document]:
+        return list(self._documents.values())
+
     def view_for(self, role: Role) -> CatalogView:
         allowed = allowed_access_levels(role)
         return CatalogView([_to_row(doc) for doc in self._documents.values() if doc.meta.access_level in allowed])

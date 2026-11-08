@@ -34,6 +34,9 @@ async def main() -> None:
     print(f"route:     {result['route']}  - {result['rationale']}")
     print(f"searched:  {result['search_query']}")
     print(f"passages:  {[chunk['chunk_id'] for chunk in result.get('retrieved', [])]}")
+    if result.get("degraded"):
+        print("degraded:  Pinecone unavailable - keyword-only backup search")
+    print(f"attempts:  {result.get('attempts')}  validation: {result.get('validation', {}).get('reason') or 'ok'}")
     if result.get("dropped"):
         print(f"dropped:   {result['dropped']}  (prompt injection)")
     if result["route"] == "research":

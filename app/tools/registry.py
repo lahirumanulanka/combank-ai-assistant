@@ -37,10 +37,12 @@ class ToolOutcome:
 
 
 class ToolRegistry:
-    def __init__(self, tools: list[AgentTool], timeout_s: float = 10, mcp_available: bool = False):
+    def __init__(self, tools: list[AgentTool], timeout_s: float = 10, mcp_available: bool = False,
+                 chaos_delay_s: float = 0):
         self._tools = {tool.name: tool for tool in tools}
         self.timeout_s = timeout_s
         self.mcp_available = mcp_available
+        self.chaos_delay_s = chaos_delay_s
 
     def tools_for(self, role: Role) -> list[AgentTool]:
         return [tool for name, tool in self._tools.items() if can_use_tool(role, name)]
@@ -57,7 +59,7 @@ class ToolRegistry:
             return ToolOutcome("denied", f"Tool '{name}' is not permitted for the {role.value} role.")
 
         try:
-            data = await asyncio.wait_for(tool.run(args, role), timeout=self.timeout_s)
+            data = await asyncio.wait_for(self._run(tool, args, role), timeout=self.timeout_s)
         except ValidationError as exc:
             return ToolOutcome("invalid", f"Invalid arguments for '{name}': {exc.errors(include_url=False)}")
         except TimeoutError:
@@ -70,3 +72,8 @@ class ToolRegistry:
         content = data if isinstance(data, str) else json.dumps(data, default=str)
         log.info("tool_ok", tool=name)
         return ToolOutcome("ok", content[:MAX_TOOL_OUTPUT_CHARS], data)
+
+    async def _run(self, tool: AgentTool, args: dict, role: Role):
+        if self.chaos_delay_s:
+            await asyncio.sleep(self.chaos_delay_s)
+        return await tool.run(args, role)

@@ -24,7 +24,12 @@ def best_match(encoder: BM25Encoder, query: str) -> int:
 def test_tokenize_lowercases_drops_stop_words_and_keeps_codes():
     tokens = tokenize("The adapter logged ERR_CONN_POOL_EXHAUSTED for INC-2026-03-14")
 
-    assert tokens == ["adapter", "logged", "err_conn_pool_exhausted", "inc-2026-03-14"]
+    assert tokens == ["adapter", "logg", "err_conn_pool_exhaust", "inc-2026-03-14"]
+
+
+def test_word_forms_share_one_stem():
+    assert tokenize("rotate rotated rotation rotations") == ["rotat", "rotat", "rotat", "rotat"]
+    assert tokenize("passwords password") == ["password", "password"]
 
 
 def test_token_id_is_the_same_every_run():
@@ -34,7 +39,7 @@ def test_token_id_is_the_same_every_run():
 def test_rare_words_are_worth_more_than_common_words():
     encoder = BM25Encoder().fit(CORPUS)
 
-    assert encoder.idf("mfa") > encoder.idf("payments")
+    assert encoder.idf("mfa") > encoder.idf("payment")
 
 
 def test_exact_error_code_finds_the_right_chunk():

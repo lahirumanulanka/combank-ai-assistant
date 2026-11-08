@@ -40,3 +40,11 @@ class AssistantUnavailable(AppError):
 class ApprovalConflict(AppError):
     status_code = 409
     code = "approval_conflict"
+
+
+class LLMUnavailable(AppError):
+    status_code = 503
+    code = "llm_unavailable"
+
+    def __init__(self):
+        super().__init__("The AI model is unavailable right now. Please try again in a minute.")

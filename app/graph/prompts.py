@@ -126,3 +126,7 @@ BRAND_SAFE = (
     "I can share information about Commercial Bank's own policies, services and documents, but I can't compare "
     "banks or give personal financial advice. For product questions, please contact the relevant team."
 )
+
+DEGRADED_NOTE = """
+Search is running in backup mode (keyword-only) because the vector database is unavailable. Start the answer with
+one short sentence saying results may be less complete than usual."""

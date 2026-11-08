@@ -38,7 +38,8 @@ def summarize(node: str, update: dict) -> dict:
         return {"results": update["tool_results"]}
     if node == "retrieval":
         chunk_ids = [chunk["chunk_id"] for chunk in update["retrieved"]]
-        return {"found": len(chunk_ids), "chunk_ids": chunk_ids, "dropped": update.get("dropped", [])}
+        return {"found": len(chunk_ids), "chunk_ids": chunk_ids, "dropped": update.get("dropped", []),
+                "degraded": update.get("degraded", False)}
     if node == "response":
         return {"attempt": update["attempts"]}
     if node == "validator":
@@ -67,8 +68,11 @@ async def stream_events(graph, graph_input, config: dict, context: RuntimeContex
         graph_input,
         config=config,
         context=context,
-        stream_mode=["updates", "messages"],
+        stream_mode=["updates", "messages", "custom"],
     ):
+        if mode == "custom":
+            yield sse("notice", payload)
+            continue
         if mode == "messages":
             chunk, metadata = payload
             if metadata.get("langgraph_node") in ANSWER_NODES and isinstance(chunk, AIMessageChunk) and chunk.text:
