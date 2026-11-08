@@ -18,6 +18,7 @@ class AgentState(TypedDict, total=False):
     rationale: str
     guard: dict
     dropped: list[str]
+    degraded: bool
     notice: str
     search_query: str
     retrieved: list[dict]

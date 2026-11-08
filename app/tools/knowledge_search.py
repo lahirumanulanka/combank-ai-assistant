@@ -21,7 +21,7 @@ def make_knowledge_search(searcher) -> AgentTool:
         min_score = get_settings().retrieval_min_score
         passages = [
             {"chunk_id": r.chunk_id, "title": r.title, "section": r.section, "text": r.text}
-            for r in results if r.score >= min_score
+            for r in results if r.source == "local_bm25" or r.score >= min_score
         ]
         kept, _ = guard_passages(passages)
         return kept

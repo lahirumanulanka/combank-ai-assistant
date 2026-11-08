@@ -23,7 +23,10 @@ from app.graph.nodes.tools import (
 from app.graph.nodes.validator import route_after_validation, validator
 from app.graph.state import AgentState
 from app.knowledge.catalog import Library
-from app.services.llm import create_chat_model
+from app.services.llm import create_resilient_model
+from app.services.local_search import LocalSearch
+from app.services.resilience import CircuitBreaker
+from app.services.resilient_search import ResilientSearch
 from app.services.search import get_hybrid_search
 from app.tools.factory import build_tool_registry
 from app.tools.knowledge_search import make_knowledge_search
@@ -72,14 +75,25 @@ def build_graph(llm, searcher, checkpointer=None, library: Library | None = None
     return graph.compile(checkpointer=checkpointer)
 
 
+def build_resilient_search(settings, library: Library) -> ResilientSearch:
+    return ResilientSearch(
+        primary=get_hybrid_search(),
+        local=LocalSearch.from_library(library),
+        breaker=CircuitBreaker(settings.breaker_failures, settings.breaker_cooldown_s),
+        timeout_s=settings.pinecone_timeout_s,
+        chaos=settings.chaos_pinecone_fail,
+    )
+
+
 async def build_default_graph(checkpointer=None):
     settings = get_settings()
-    searcher = get_hybrid_search()
+    library = Library.from_folder(Path(settings.docs_dir))
+    searcher = build_resilient_search(settings, library)
     return build_graph(
-        llm=create_chat_model(settings.llm_strong, settings),
+        llm=create_resilient_model(settings.llm_strong, settings),
         searcher=searcher,
         checkpointer=checkpointer,
-        library=Library.from_folder(Path(settings.docs_dir)),
-        worker_llm=create_chat_model(settings.llm_cheap, settings),
+        library=library,
+        worker_llm=create_resilient_model(settings.llm_cheap, settings),
         registry=await build_tool_registry(settings, searcher),
     )
