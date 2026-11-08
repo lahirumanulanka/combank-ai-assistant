@@ -1,0 +1,64 @@
+x-app: &app
+  build:
+    context: .
+    dockerfile: docker/app.Dockerfile
+  image: combank-assistant:latest
+  env_file: .env
+  environment:
+    LOG_JSON: "true"
+    BM25_PARAMS_PATH: /app/state/bm25_params.json
+    CHECKPOINT_DB: /app/state/checkpoints.db
+    MCP_URL: http://mcp:8001/mcp
+  volumes:
+    - app-state:/app/state
+
+services:
+  mcp:
+    <<: *app
+    command: ["python", "-m", "mcp_server.server"]
+    environment:
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "8001"
+    volumes: []
+    ports:
+      - "${MCP_PORT:-8001}:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 8001), 2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    <<: *app
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      mcp:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ui:
+    <<: *app
+    command: ["streamlit", "run", "ui/streamlit_app.py", "--server.port", "8501", "--server.address", "0.0.0.0",
+              "--browser.gatherUsageStats", "false"]
+    environment:
+      API_BASE_URL: http://api:8000
+    volumes: []
+    ports:
+      - "${UI_PORT:-8501}:8501"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  ingest:
+    <<: *app
+    command: ["python", "-m", "scripts.ingest"]
+    profiles: ["ingest"]
+
+volumes:
+  app-state:
