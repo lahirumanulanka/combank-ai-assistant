@@ -7,13 +7,13 @@ from typing import Any, Literal
 from pydantic import ValidationError
 
 from app.core.logging import get_logger
-from app.core.rbac import Role, can_use_tool
+from app.core.rbac import Role, can_use_tool, lowest_role_for
 
 log = get_logger(__name__)
 
 MAX_TOOL_OUTPUT_CHARS = 6000
 
-Status = Literal["ok", "denied", "invalid", "timeout", "error", "unknown"]
+Status = Literal["ok", "denied", "invalid", "timeout", "error", "unknown", "rejected"]
 
 
 @dataclass(frozen=True)
@@ -46,7 +46,7 @@ class ToolRegistry:
         return [tool for name, tool in self._tools.items() if can_use_tool(role, name)]
 
     def locked_for(self, role: Role) -> list[str]:
-        return [name for name in self._tools if not can_use_tool(role, name)]
+        return [f"{name} (needs {lowest_role_for(name).value})" for name in self._tools if not can_use_tool(role, name)]
 
     async def execute(self, name: str, args: dict, role: Role) -> ToolOutcome:
         tool = self._tools.get(name)

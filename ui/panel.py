@@ -80,8 +80,12 @@ def describe(event: str, data: dict) -> tuple[str, str] | None:
         return "Started", f"thread `{data['thread_id']}`"
     if event == "node_end":
         return describe_node(data)
+    if event == "interrupt":
+        actions = "  \n".join(f"`{a['tool']}` {a['args']}" for a in data["actions"])
+        return "Paused for approval", f":orange[waiting for a human decision]  \n{actions}"
     if event == "done":
-        return "Done", "answer delivered"
+        return ("Waiting", "run is paused until someone approves or rejects") if data.get("awaiting_approval") \
+            else ("Done", "answer delivered")
     if event == "error":
         return "Error", f":red[{data['message']}]"
     return None

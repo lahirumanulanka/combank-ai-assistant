@@ -2,6 +2,7 @@ import json
 from collections.abc import AsyncIterator
 
 from langchain_core.messages import AIMessageChunk, HumanMessage
+from langgraph.types import Command
 
 from app.graph.context import RuntimeContext
 
@@ -49,10 +50,18 @@ def summarize(node: str, update: dict) -> dict:
     return {}
 
 
-async def stream_events(graph, message: str, config: dict, context: RuntimeContext) -> AsyncIterator[str]:
-    answer = ""
+def new_message(message: str) -> dict:
+    return {"messages": [HumanMessage(message)]}
+
+
+def human_decision(approved: bool) -> Command:
+    return Command(resume={"approved": approved})
+
+
+async def stream_events(graph, graph_input, config: dict, context: RuntimeContext) -> AsyncIterator[str]:
+    answer, waiting = "", False
     async for mode, payload in graph.astream(
-        {"messages": [HumanMessage(message)]},
+        graph_input,
         config=config,
         context=context,
         stream_mode=["updates", "messages"],
@@ -61,11 +70,16 @@ async def stream_events(graph, message: str, config: dict, context: RuntimeConte
             chunk, metadata = payload
             if metadata.get("langgraph_node") in ANSWER_NODES and isinstance(chunk, AIMessageChunk) and chunk.text:
                 yield sse("token", {"text": chunk.text})
-        else:
-            for node, update in payload.items():
-                update = update or {}
-                yield sse("node_end", {"node": node, **summarize(node, update)})
-                if node == "validator" and update.get("messages"):
-                    answer = update["messages"][-1].content
+            continue
 
-    yield sse("done", {"answer": answer})
+        for node, update in payload.items():
+            if node == "__interrupt__":
+                waiting = True
+                yield sse("interrupt", update[0].value)
+                continue
+            update = update or {}
+            yield sse("node_end", {"node": node, **summarize(node, update)})
+            if node == "validator" and update.get("messages"):
+                answer = update["messages"][-1].content
+
+    yield sse("done", {"answer": answer, "awaiting_approval": waiting})

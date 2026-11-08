@@ -117,5 +117,5 @@ def test_tool_answers_may_skip_citations_but_not_invent_them():
 
 
 def test_viewer_is_told_which_tools_are_locked():
-    assert REGISTRY.locked_for(Role.VIEWER) == ["get_service", "lookup_employee"]
+    assert REGISTRY.locked_for(Role.VIEWER) == ["get_service (needs analyst)", "lookup_employee (needs analyst)"]
     assert REGISTRY.locked_for(Role.ANALYST) == []

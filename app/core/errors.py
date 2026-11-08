@@ -35,3 +35,8 @@ class AssistantUnavailable(AppError):
 
     def __init__(self):
         super().__init__("The assistant is not configured yet. Check the API keys in .env.")
+
+
+class ApprovalConflict(AppError):
+    status_code = 409
+    code = "approval_conflict"

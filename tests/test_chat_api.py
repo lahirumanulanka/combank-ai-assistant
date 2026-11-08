@@ -1,18 +1,9 @@
-import json
-
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 
 from app.graph.builder import build_graph
 from tests.fakes import GOOD_ANSWER, FakeLLM, FakeSearcher
-
-
-def parse_sse(body: str) -> list[tuple[str, dict]]:
-    events = []
-    for block in body.strip().split("\n\n"):
-        lines = dict(line.split(": ", 1) for line in block.splitlines())
-        events.append((lines["event"], json.loads(lines["data"])))
-    return events
+from tests.helpers import parse_sse
 
 
 @pytest.fixture

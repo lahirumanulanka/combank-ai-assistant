@@ -52,14 +52,15 @@ class ApiClient:
         return response.json()
 
     def stream_chat(self, token: str, message: str, thread_id: str | None = None) -> Iterator[tuple[str, dict]]:
+        yield from self._stream("/chat/stream", token, {"message": message, "thread_id": thread_id})
+
+    def resume_chat(self, token: str, thread_id: str, approved: bool) -> Iterator[tuple[str, dict]]:
+        yield from self._stream("/chat/resume", token, {"thread_id": thread_id, "approved": approved})
+
+    def _stream(self, path: str, token: str, body: dict) -> Iterator[tuple[str, dict]]:
         try:
-            with httpx.stream(
-                "POST",
-                f"{self.base_url}/chat/stream",
-                json={"message": message, "thread_id": thread_id},
-                headers={"Authorization": f"Bearer {token}"},
-                timeout=self.timeout_s,
-            ) as response:
+            with httpx.stream("POST", f"{self.base_url}{path}", json=body,
+                              headers={"Authorization": f"Bearer {token}"}, timeout=self.timeout_s) as response:
                 _raise_for_error(response)
                 yield from parse_sse(response.iter_lines())
         except httpx.ConnectError:
